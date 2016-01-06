@@ -63,11 +63,11 @@ class Client
         HttpClient $client, $username, $secret, $baseUrl = null, $fieldsMap = array(), $choicesMap = array()
     )
     {
-	    $this->client = $client;
+        $this->client = $client;
         $this->username = $username;
         $this->secret = $secret;
-	    $this->fieldsMapping = $fieldsMap;
-	    $this->choicesMapping = $choicesMap;
+        $this->fieldsMapping = $fieldsMap;
+        $this->choicesMapping = $choicesMap;
 
         if (null !== $baseUrl) {
             $this->baseUrl = $baseUrl;
@@ -115,15 +115,15 @@ class Client
      */
     public function addChoicesMapping($mapping = array())
     {
-	    foreach ($mapping as $field => $choices) {
-		    if (is_array($choices)) {
-			    if (!array_key_exists($field, $this->choicesMapping)) {
-				    $this->choicesMapping[$field] = array();
-			    }
+        foreach ($mapping as $field => $choices) {
+            if (is_array($choices)) {
+                if (!array_key_exists($field, $this->choicesMapping)) {
+                    $this->choicesMapping[$field] = array();
+                }
 
-			    $this->choicesMapping[$field] = array_merge($this->choicesMapping[$field], $choices);
-		    }
-	    }
+                $this->choicesMapping[$field] = array_merge($this->choicesMapping[$field], $choices);
+            }
+        }
     }
 
     /**
@@ -140,10 +140,10 @@ class Client
         }
 
         if (!isset($this->fieldsMapping[$field])) {
-	        throw new ClientException(sprintf('Unrecognized field name "%s"', $field));
+            throw new ClientException(sprintf('Unrecognized field name "%s"', $field));
         }
 
-	    return (int)$this->fieldsMapping[$field];
+        return (int)$this->fieldsMapping[$field];
     }
 
     /**
@@ -173,7 +173,7 @@ class Client
      */
     public function getChoiceId($field, $choice)
     {
-	    $fieldName = $this->getFieldName($field);
+        $fieldName = $this->getFieldName($field);
 
         if (!array_key_exists($fieldName, $this->choicesMapping)) {
             throw new ClientException(sprintf('Unrecognized field "%s" for choice "%s"', $field, $choice));
@@ -197,7 +197,7 @@ class Client
      */
     public function getChoiceName($field, $choiceId)
     {
-	    $fieldName = $this->getFieldName($field);
+        $fieldName = $this->getFieldName($field);
 
         if(!array_key_exists($fieldName, $this->choicesMapping)) {
             throw new ClientException(sprintf('Unrecognized field "%s" for choice id "%s"', $field, $choiceId));
@@ -236,11 +236,11 @@ class Client
     public function createContact(array $data)
     {
         if (isset($data['contacts']) && is_array($data['contacts'])){
-	    foreach($data['contacts'] as &$contact){
-	        $contact = $this->mapFieldsToIds($contact);
-	    }
+        foreach($data['contacts'] as &$contact){
+            $contact = $this->mapFieldsToIds($contact);
         }
-    	
+        }
+        
         return $this->send(HttpClient::POST, 'contact', $this->mapFieldsToIds($data));
     }
 
@@ -707,7 +707,7 @@ class Client
     * @return Response
     */
     public function createCustomField($name, $type){
-	    return $this->send(HttpClient::POST, 'field', array('name'=>$name, 'application_type'=>$type));
+        return $this->send(HttpClient::POST, 'field', array('name'=>$name, 'application_type'=>$type));
     }
     
 
@@ -717,17 +717,40 @@ class Client
     * @param array $unsubsciber -   array of campaign id, email_id and contact_uid, which required for
     *                               unsubscribe a customer.
     *
-    * @return Response
+    * @return array
     */
-    public function unsubscribe(array $unsubscriber) {
+    public function unsubscribe(array $unsubscribers) 
+    {
+        $ok_ids = array();
+        $error_ids = array();
+        $unsubscribe_response = array();
 
-        $body = array(
-            'launch_list_id' => $unsubscriber['campaign_id'],
-            'email_id' => $unsubscriber['email_id'],
-            'contact_uid' => $unsubscriber['contact_uid'],
+        foreach ($unsubscribers as $unsubscriber) { 
+
+            $response = $this->send('POST', 'email/unsubscribe', array(
+                'launch_list_id' => $unsubscriber['campaign_id'],
+                'email_id' => $unsubscriber['email_id'],
+                'contact_uid' => $unsubscriber['contact_uid'],
+            ));
+            
+            if ($response->getReplyText() == 'OK') {
+                $ok_ids[] = $unsubscriber['emarsys_sync_id'];
+            } else {
+                $error_ids[$unsubscriber['emarsys_sync_id']] = array(
+                    'replyText' => $response->getReplyText(),
+                );
+            }
+        }
+
+        $unsubscribe_response = array(
+            'ok' => array(
+                'replyText' => 'OK',
+                'ids' => $ok_ids,
+            ),
+            'errors' => $error_ids,
         );
 
-        return $this->send('POST', 'email/unsubscribe', $body);
+        return $unsubscribe_response;
     }
 
 
@@ -740,18 +763,18 @@ class Client
      */
     protected function send($method = 'GET', $uri, array $body = array())
     {
-	    $headers = array('Content-Type: application/json', 'X-WSSE: ' . $this->getAuthenticationSignature());
-	    $uri = $this->baseUrl . $uri;
+        $headers = array('Content-Type: application/json', 'X-WSSE: ' . $this->getAuthenticationSignature());
+        $uri = $this->baseUrl . $uri;
 
-	    try {
-		    $responseJson = $this->client->send($method, $uri, $headers, $body);
-	    } catch (\Exception $e) {
-		    throw new ServerException($e->getMessage());
-	    }
+        try {
+            $responseJson = $this->client->send($method, $uri, $headers, $body);
+        } catch (\Exception $e) {
+            throw new ServerException($e->getMessage());
+        }
 
-	    $responseArray = json_decode($responseJson, true);
+        $responseArray = json_decode($responseJson, true);
 
-	    return new Response($responseArray);
+        return new Response($responseArray);
     }
 
     /**
