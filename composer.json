@@ -1,19 +1,6 @@
 {
+    "name": "jateknet/emarsys",
     "description": "Emarsys RestFull API client",
-    "repositories": [
-        {
-            "type": "package",
-            "package": {
-                "name": "jateknet/emarsys",
-                "version": "master",
-                "source": {
-                    "url": "https://github.com/jateknet/Emarsys.git",
-                    "type": "git",
-                    "reference": "master"
-                }
-            }
-        }
-    ],
     "require": {
         "php": ">=5.3.3",
         "lib-curl": "*"
