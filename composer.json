@@ -1,5 +1,5 @@
 {
-    "name": "snowcap/emarsys",
+    "name": "jateknet/emarsys",
     "description": "Emarsys RestFull API client",
     "require": {
         "php": ">=5.3.3",
@@ -16,8 +16,8 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "Jérôme Poskin",
-            "email": "jerome@snowcap.be"
+            "name": "Kállai Béla",
+            "email": "kallai.bela@jateknet.hu"
         }
     ],
     "minimum-stability": "dev"

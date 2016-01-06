@@ -707,9 +707,30 @@ class Client
     * @return Response
     */
     public function createCustomField($name, $type){
-	return $this->send(HttpClient::POST, 'field', array('name'=>$name, 'application_type'=>$type));
+	    return $this->send(HttpClient::POST, 'field', array('name'=>$name, 'application_type'=>$type));
     }
     
+
+    /**
+    * Unsubscribe a customer
+    *
+    * @param array $unsubsciber -   array of campaign id, email_id and contact_uid, which required for
+    *                               unsubscribe a customer.
+    *
+    * @return Response
+    */
+    public function unsubscribe(array $unsubscriber) {
+
+        $body = array(
+            'launch_list_id' => $unsubscriber['campaign_id'],
+            'email_id' => $unsubscriber['email_id'],
+            'contact_uid' => $unsubscriber['contact_uid'],
+        );
+
+        return $this->send('POST', 'email/unsubscribe', $body);
+    }
+
+
     /**
      * @param string $method
      * @param string $uri
