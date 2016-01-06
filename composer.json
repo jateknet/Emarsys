@@ -1,5 +1,5 @@
 {
-    "name": "jateknet/emarsys",
+    "name": "jateknet/emarsys-php-api",
     "description": "Emarsys RestFull API client",
     "require": {
         "php": ">=5.3.3",
