@@ -49,7 +49,7 @@ class Client
     /**
      * @var array
      */
-    private $systemFields = array('key_id', 'id', 'contacts');
+    private $systemFields = array('key_id', 'id', 'contacts', 'uid');
 
     /**
      * @param HttpClient $client HTTP client implementation
@@ -240,7 +240,7 @@ class Client
             $contact = $this->mapFieldsToIds($contact);
         }
         }
-        
+
         return $this->send(HttpClient::POST, 'contact', $this->mapFieldsToIds($data));
     }
 
@@ -257,7 +257,7 @@ class Client
                 $contact = $this->mapFieldsToIds($contact);
             }
         }
-        
+
         return $this->send(HttpClient::PUT, 'contact', $this->mapFieldsToIds($data));
     }
 
@@ -697,7 +697,7 @@ class Client
     {
         return $this->send(HttpClient::POST, 'source/create', $data);
     }
-    
+
     /**
     * creates custom field in your Emarsys account
     *
@@ -709,7 +709,7 @@ class Client
     public function createCustomField($name, $type){
         return $this->send(HttpClient::POST, 'field', array('name'=>$name, 'application_type'=>$type));
     }
-    
+
 
     /**
     * Unsubscribe a customer
@@ -719,20 +719,20 @@ class Client
     *
     * @return array
     */
-    public function unsubscribe(array $unsubscribers) 
+    public function unsubscribe(array $unsubscribers)
     {
         $ok_ids = array();
         $error_ids = array();
         $unsubscribe_response = array();
 
-        foreach ($unsubscribers as $unsubscriber) { 
+        foreach ($unsubscribers as $unsubscriber) {
 
             $response = $this->send('POST', 'email/unsubscribe', array(
                 'launch_list_id' => $unsubscriber['campaign_id'],
                 'email_id' => $unsubscriber['email_id'],
                 'contact_uid' => $unsubscriber['contact_uid'],
             ));
-            
+
             if ($response->getReplyText() == 'OK') {
                 $ok_ids[] = $unsubscriber['emarsys_sync_id'];
             } else {
