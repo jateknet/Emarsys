@@ -21,11 +21,13 @@ class Client
     /**
      * @var string
      */
-    private $baseUrl = 'https://suite6.emarsys.net/api/v2/';
+    private $baseUrl = 'https://api.emarsys.net/api/v2/';
+
     /**
      * @var string
      */
     private $username;
+
     /**
      * @var string
      */
@@ -235,11 +237,7 @@ class Client
      */
     public function createContact(array $data)
     {
-        if (isset($data['contacts']) && is_array($data['contacts'])){
-        foreach($data['contacts'] as &$contact){
-            $contact = $this->mapFieldsToIds($contact);
-        }
-        }
+        $data = $this->mapFieldsForMultipleContacts($data);
 
         return $this->send(HttpClient::POST, 'contact', $this->mapFieldsToIds($data));
     }
@@ -252,13 +250,34 @@ class Client
      */
     public function updateContact(array $data)
     {
-        if (isset($data['contacts']) && is_array($data['contacts'])){
-            foreach($data['contacts'] as &$contact){
-                $contact = $this->mapFieldsToIds($contact);
-            }
-        }
+        $data = $this->mapFieldsForMultipleContacts($data);
 
         return $this->send(HttpClient::PUT, 'contact', $this->mapFieldsToIds($data));
+    }
+
+    /**
+     * Updates one or more contacts/recipients, identified by an external ID. If the contact does not exist in the
+     * database, it is created.
+     *
+     * @param array $data
+     * @return Response
+     */
+    public function updateContactAndCreateIfNotExists(array $data)
+    {
+        $data = $this->mapFieldsForMultipleContacts($data);
+
+        return $this->send(HttpClient::PUT, 'contact/?create_if_not_exists=1', $this->mapFieldsToIds($data));
+    }
+
+    /**
+     * Deletes a single contact/recipient, identified by an external ID.
+     *
+     * @param array $data
+     * @return Response
+     */
+    public function deleteContact(array $data)
+    {
+        return $this->send(HttpClient::POST, 'contact/delete', $data);
     }
 
     /**
@@ -267,7 +286,7 @@ class Client
      * @param string $fieldId
      * @param string $fieldValue
      * @throws Exception\ClientException
-     * @return Response
+     * @return int
      */
     public function getContactId($fieldId, $fieldValue)
     {
@@ -279,7 +298,7 @@ class Client
             return $data['id'];
         }
 
-        throw new ClientException('Missing "id" in response');
+        throw new ClientException($response->getReplyText(), $response->getReplyCode());
     }
 
     /**
@@ -358,6 +377,17 @@ class Client
     }
 
     /**
+     * Deletes a contact list which can be used as recipient source for the email.
+     *
+     * @param string $listId
+     * @return Response
+     */
+    public function deleteContactList($listId)
+    {
+        return $this->send(HttpClient::POST, sprintf('contactlist/%s/deletelist', $listId));
+    }
+
+    /**
      * Creates a contact list which can be used as recipient source for the email.
      *
      * @param string $listId
@@ -379,6 +409,31 @@ class Client
     public function removeContactsFromContactList($listId, array $data)
     {
         return $this->send(HttpClient::POST, sprintf('contactlist/%s/delete', $listId), $data);
+    }
+
+    /**
+     * Get a list of contact IDs that are in a contact list
+     *
+     * @param string $listId
+     * @param array $data
+     * @return Response
+     */
+    public function getContactsFromContactList($listId, array $data)
+    {
+        return $this->send(HttpClient::GET, sprintf('contactlist/%s/contacts', $listId), $data);
+    }
+
+    /**
+     * Checks whether a specific contact is included in the defined contact list.
+     *
+     * @param int $contactId
+     * @param int $listId
+     * @return Response
+     * @link http://documentation.emarsys.com/resource/developers/endpoints/contacts/check-a-contact-in-a-contact-list/
+     */
+    public function checkContactInList($contactId, $listId)
+    {
+        return $this->send(HttpClient::GET, sprintf('contactlist/%s/contacts/%s', $listId, $contactId));
     }
 
     /**
@@ -699,17 +754,17 @@ class Client
     }
 
     /**
-    * creates custom field in your Emarsys account
-    *
-    * @param string $name
-    * @param string $type shorttext|longtext|largetext|date|url|numeric
-    *
-    * @return Response
-    */
-    public function createCustomField($name, $type){
+     * creates custom field in your Emarsys account
+     *
+     * @param string $name
+     * @param string $type shorttext|longtext|largetext|date|url|numeric
+     *
+     * @return Response
+     */
+    public function createCustomField($name, $type)
+    {
         return $this->send(HttpClient::POST, 'field', array('name'=>$name, 'application_type'=>$type));
     }
-
 
     /**
     * Unsubscribe a customer
@@ -854,4 +909,18 @@ class Client
 
         return $data;
     }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    private function mapFieldsForMultipleContacts(array $data)
+    {
+        if (!isset($data['contacts']) || !is_array($data['contacts'])) {
+            return $data;
+        }
+
+        return array_merge($data, ['contacts' => array_map([$this, 'mapFieldsToIds'], $data['contacts'])]);
+    }
+
 }
